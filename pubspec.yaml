@@ -1,0 +1,58 @@
+name: geo_detect
+description: "A Flutter project to detect geographical locations and provide related services."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  url_launcher: ^6.3.0
+  flutter_dotenv: ^6.0.0
+  google_maps_flutter: ^2.10.0
+  http: ^1.5.0
+  json_annotation: ^4.9.0
+  json_serializable: ^6.11.1
+  font_awesome_flutter: ^10.7.0
+  provider: ^6.1.2
+  location: ^8.0.1
+  geocoding: ^4.0.0
+  geolocator: ^14.0.2
+  google_generative_ai: ^0.4.6
+  flutter_markdown: ^0.6.18
+  shared_preferences: ^2.2.2
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.9.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - .env
+    - assets/images/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/icon.png"
+
+flutter_native_splash:
+  color: "#008080"
+  image: assets/images/icon.png
+  android: true
+  ios: true
+  web: false
+  android_gravity: center
+  android_12:
+    image: assets/images/icon.png
+    color: "#008080"
