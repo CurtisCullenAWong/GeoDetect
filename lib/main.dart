@@ -9,7 +9,11 @@ import 'screens/history_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Note: .env not loaded ($e). Running in offline demo mode.");
+  }
   
   // Initialize history service
   final historyService = HistoryService();

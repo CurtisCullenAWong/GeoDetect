@@ -196,96 +196,116 @@ class _GetStartedScreenState extends State<GetStartedScreen>
         await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
             accuracy: LocationAccuracy.best,
-            timeLimit: Duration(seconds: 10),
+            timeLimit: Duration(seconds: 3),
           ),
         );
-        
-        setState(() {
-          _statusText = 'Location access confirmed!';
-        });
-        
-        // Small delay to show success message
-        await Future.delayed(const Duration(milliseconds: 800));
-        
-        if (!context.mounted) return;
-        Navigator.of(context).pushReplacementNamed('/map');
-        
-      } catch (e) {
-        setState(() {
-          _statusText = 'Failed to get location';
-          _isLoading = false;
-        });
-        
-        if (!context.mounted) return;
-        _showPermissionDialog(context, "Location Error",
-            "Unable to get your current location. Please check your GPS and try again.");
+      } catch (_) {
+        // Fallback to demo location mode on web/offline
       }
-
-    } catch (e) {
+      
+      if (!mounted) return;
       setState(() {
-        _statusText = 'An error occurred';
-        _isLoading = false;
+        _statusText = 'Entering Demo Mode...';
       });
       
+      await Future.delayed(const Duration(milliseconds: 300));
+      
       if (!context.mounted) return;
-      _showPermissionDialog(context, "Error",
-          "An unexpected error occurred: ${e.toString()}");
+      Navigator.of(context).pushReplacementNamed('/map');
+
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context).pushReplacementNamed('/map');
     } finally {
       _buttonController.reverse();
     }
   }
 
-  Future<bool?> _showLocationServiceDialog(BuildContext context) {
+  Future<bool?> _showLocationServiceDialog(BuildContext pageContext) {
+    bool closed = false;
     return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.location_disabled, color: Colors.orange),
-            SizedBox(width: 8),
-            Text("Location Services Disabled"),
+      context: pageContext,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        Future.delayed(const Duration(seconds: 4), () {
+          if (!closed && dialogContext.mounted) {
+            closed = true;
+            Navigator.of(dialogContext, rootNavigator: true).pop(false);
+          }
+        });
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.location_disabled, color: Colors.orange),
+              SizedBox(width: 8),
+              Text("Location Services Disabled"),
+            ],
+          ),
+          content: const Text(
+            "Location services are disabled on your device. Would you like to open settings to enable them?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (!closed) {
+                  closed = true;
+                  Navigator.of(dialogContext, rootNavigator: true).pop(false);
+                }
+              },
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (!closed) {
+                  closed = true;
+                  Navigator.of(dialogContext, rootNavigator: true).pop(true);
+                }
+              },
+              child: const Text("Open Settings"),
+            ),
           ],
-        ),
-        content: const Text(
-          "Location services are disabled on your device. Would you like to open settings to enable them?",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text("Open Settings"),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Future<void> _showPermissionDialog(BuildContext context, String title, String content) {
+  Future<void> _showPermissionDialog(BuildContext pageContext, String title, String content) {
+    bool closed = false;
     return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              title.contains("Error") ? Icons.error : Icons.location_off,
-              color: title.contains("Error") ? Colors.red : Colors.orange,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text(title)),
-          ],
-        ),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK"),
+      context: pageContext,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        Future.delayed(const Duration(seconds: 4), () {
+          if (!closed && dialogContext.mounted) {
+            closed = true;
+            Navigator.of(dialogContext, rootNavigator: true).pop();
+          }
+        });
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                title.contains("Error") ? Icons.error : Icons.location_off,
+                color: title.contains("Error") ? Colors.red : Colors.orange,
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title)),
+            ],
           ),
-        ],
-      ),
+          content: Text(content),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (!closed) {
+                  closed = true;
+                  Navigator.of(dialogContext, rootNavigator: true).pop();
+                }
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -372,45 +392,47 @@ class _GetStartedScreenState extends State<GetStartedScreen>
         ),
         child: SafeArea(
           child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
-              child: FadeTransition(
-                opacity: _fadeIn,
-                child: SlideTransition(
-                  position: _slideUp,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Animated Logo
-                      ScaleTransition(
-                        scale: _logoScale,
-                        child: AnimatedBuilder(
-                          animation: _pulseAnimation,
-                          builder: (context, child) {
-                            return Transform.scale(
-                              scale: _pulseAnimation.value,
-                              child: Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.white.withValues(alpha: 0.2),
-                                      blurRadius: 20,
-                                      spreadRadius: _pulseAnimation.value * 2,
-                                    ),
-                                  ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
+                child: FadeTransition(
+                  opacity: _fadeIn,
+                  child: SlideTransition(
+                    position: _slideUp,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Animated Logo
+                        ScaleTransition(
+                          scale: _logoScale,
+                          child: AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _pulseAnimation.value,
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                        blurRadius: 20,
+                                        spreadRadius: _pulseAnimation.value * 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    width: size.width > 600 ? 260 : size.width * 0.65,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
-                                child: Image.asset(
-                                  'assets/images/logo.png',
-                                  width: size.width * 0.7,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
 
                       const SizedBox(height: 50),
 

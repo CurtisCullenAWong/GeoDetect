@@ -24,9 +24,14 @@ class HistoryScreen extends StatelessWidget {
             ),
         ],
       ),
-      body: savedAnalyses.isEmpty
-          ? _buildEmptyState(context)
-          : _buildHistoryList(context, savedAnalyses, historyService),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 850),
+          child: savedAnalyses.isEmpty
+              ? _buildEmptyState(context)
+              : _buildHistoryList(context, savedAnalyses, historyService),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).pushNamedAndRemoveUntil('/map', (route) => false);
@@ -37,30 +42,45 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  void _showClearAllDialog(BuildContext context, HistoryService service) {
+  void _showClearAllDialog(BuildContext pageContext, HistoryService service) {
+    bool closed = false;
     showDialog(
-      context: context,
-      builder: (BuildContext context) {
+      context: pageContext,
+      builder: (BuildContext dialogContext) {
+        Future.delayed(const Duration(seconds: 5), () {
+          if (!closed && dialogContext.mounted) {
+            closed = true;
+            Navigator.of(dialogContext, rootNavigator: true).pop();
+          }
+        });
         return AlertDialog(
           title: const Text('Clear All History'),
           content: const Text('Are you sure you want to remove all saved locations? This action cannot be undone.'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                if (!closed) {
+                  closed = true;
+                  Navigator.of(dialogContext, rootNavigator: true).pop();
+                }
+              },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                if (!closed) {
+                  closed = true;
+                  Navigator.of(dialogContext, rootNavigator: true).pop();
+                }
                 await service.clearAllAnalyses();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (pageContext.mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
                     const SnackBar(content: Text('All saved locations removed')),
                   );
                 }
               },
               style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error),
+                  foregroundColor: Theme.of(pageContext).colorScheme.error),
               child: const Text('Clear All'),
             ),
           ],
@@ -69,30 +89,45 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  void _showDeleteSingleDialog(BuildContext context, AnalysisEntry entry, HistoryService service) {
+  void _showDeleteSingleDialog(BuildContext pageContext, AnalysisEntry entry, HistoryService service) {
+    bool closed = false;
     showDialog(
-      context: context,
-      builder: (BuildContext context) {
+      context: pageContext,
+      builder: (BuildContext dialogContext) {
+        Future.delayed(const Duration(seconds: 5), () {
+          if (!closed && dialogContext.mounted) {
+            closed = true;
+            Navigator.of(dialogContext, rootNavigator: true).pop();
+          }
+        });
         return AlertDialog(
           title: const Text('Delete Location'),
           content: Text('Are you sure you want to remove "${entry.address}"?'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                if (!closed) {
+                  closed = true;
+                  Navigator.of(dialogContext, rootNavigator: true).pop();
+                }
+              },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                if (!closed) {
+                  closed = true;
+                  Navigator.of(dialogContext, rootNavigator: true).pop();
+                }
                 await service.removeAnalysis(entry);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                if (pageContext.mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
                     SnackBar(content: Text("Removed '${entry.address}'")),
                   );
                 }
               },
               style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error),
+                  foregroundColor: Theme.of(pageContext).colorScheme.error),
               child: const Text('Delete'),
             ),
           ],
@@ -147,7 +182,14 @@ class HistoryScreen extends StatelessWidget {
         ),
       ),
       child: ListTile(
-        leading: const FaIcon(FontAwesomeIcons.mapPin),
+        leading: IconButton(
+          icon: const FaIcon(FontAwesomeIcons.mapPin),
+          tooltip: 'Pin on Demo Map',
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            Navigator.of(context).pushNamed('/map', arguments: entry);
+          },
+        ),
         title: Text(
           entry.address,
           maxLines: 1,
@@ -160,9 +202,10 @@ class HistoryScreen extends StatelessWidget {
             IconButton(
               icon: const FaIcon(FontAwesomeIcons.eye, size: 18),
               onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 Navigator.of(context).pushNamed('/analyze', arguments: entry);
               },
-              tooltip: 'View Details',
+              tooltip: 'View Analysis',
             ),
             IconButton(
               icon: const FaIcon(FontAwesomeIcons.trash, size: 16),
@@ -173,6 +216,7 @@ class HistoryScreen extends StatelessWidget {
           ],
         ),
         onTap: () {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           Navigator.of(context).pushNamed('/analyze', arguments: entry);
         },
       ),

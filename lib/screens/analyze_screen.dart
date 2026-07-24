@@ -28,9 +28,16 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
     final args = ModalRoute.of(context)?.settings.arguments;
 
     if (args is String) {
-      _address = args;
-      _isLoading = false;
-      _hasAnalyzed = false;
+      if (_address != args) {
+        _address = args;
+        _isLoading = false;
+        _hasAnalyzed = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_hasAnalyzed && !_isLoading) {
+            _fetchAiAnalysis();
+          }
+        });
+      }
     } else if (args is AnalysisEntry) {
       _preloadedAnalysis = args;
       _address = _preloadedAnalysis!.address;
@@ -48,10 +55,8 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   }
 
   Future<void> _fetchAiAnalysis() async {
-    // Prevent multiple simultaneous requests
     if (_isLoading) return;
     
-    // Implement request cooldown to prevent rapid button presses
     final now = DateTime.now();
     if (_lastRequestTime != null && 
         now.difference(_lastRequestTime!) < _requestCooldown) {
@@ -60,18 +65,6 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
           content: const Text("Please wait before making another request."),
           backgroundColor: Theme.of(context).colorScheme.tertiary,
           duration: const Duration(seconds: 1),
-        ),
-      );
-      return;
-    }
-    
-    // Check if we already have analysis for this exact address
-    if (_hasAnalyzed && _aiResponse.isNotEmpty && _errorMessage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Analysis already available for this location."),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -143,20 +136,24 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
 
       if (!mounted) return;
 
+      setState(() {
+        _preloadedAnalysis = entry;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
+          content: const Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
               Expanded(
-                child: Text("Analysis saved! View in History tab."),
+                child: Text("Analysis saved! View in Saved Locations."),
               ),
             ],
           ),
           backgroundColor: Colors.green,
           action: SnackBarAction(
-            label: "VIEW",
+            label: "VIEW HISTORY",
             textColor: Colors.white,
             onPressed: () {
               Navigator.of(context).pushNamed('/history');
@@ -164,12 +161,6 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
           ),
         ),
       );
-
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/map');
-        }
-      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -218,7 +209,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            if (_preloadedAnalysis != null) {
+            if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             } else {
               Navigator.of(context).pushReplacementNamed('/map');
@@ -242,10 +233,14 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   }
 
   Widget _buildContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 850),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
           Card(
             elevation: 2,
             child: Padding(
@@ -332,7 +327,9 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
             ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildAnalyzeButton() {
