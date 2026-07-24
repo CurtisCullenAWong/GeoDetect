@@ -581,8 +581,9 @@ class _GetStartedScreenState extends State<GetStartedScreen>
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFeatureItem(IconData icon, String title, String subtitle) {
     return Row(
